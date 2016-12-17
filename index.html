@@ -7,6 +7,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+
   <!-- <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">  -->
   
   <style>
@@ -22,67 +24,82 @@
     }
 
     #map {
-      -webkit-user-select: none; 
-      -moz-user-select: none; 
-      -ms-user-select: none; 
-      -o-user-select: none;
       user-select: none;
     }
 
-    .marker {
-      width:12px;
-      height:12px;
+   .marker {
+      z-index:1;
+      width:0px;
+      height:0px;
+      background-color:red;
       text-align: center;
-      background-color: #4481FE;
-      border: 3px solid white;
-      border-radius: 6px;
-      box-shadow: 0 0 3px rgba(0,0,0,0.15);
       white-space: nowrap;
+      /* required css if coming from markup */
+      position: absolute;
+      transform: translate3d(-50%, -50%, 0px); 
     }
+      .marker:hover + .marker {
+        z-index:0;
+      }
       .marker:hover::before {
-        opacity:1;
+        border: 4px solid transparent;
+        box-shadow: none;
+        color: white;
+        visibility: visible;
       }
       .marker:hover::after {
         opacity:1;
+        visibility: visible;
       }
 
       .marker::before {
         position: absolute;
+        display: block;
         top:50%;
-        left:-50%;
-        width: 12px;
-        height: 12px;
-        border-radius: 6px;
-        content: '';
-        font-family: "fontawesome";
+        left: 0;
+        width: 16px;
+        height: 16px;
+        content: '+';
+        line-height:0.6;
+        color: transparent;
         font-size: 11px;
         z-index:10;
         transform: translateY(-50%);
         text-align: center;
         background-color: #4481FE;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.18);
 
-        transition: all 150ms ease;
-        opacity:0;
+        border: 4px solid white;
+        transition: all 150ms linear;
       }
       
       .marker::after {
+        display: inline-block;
         position: absolute;
-        top:-100%;
+        font-weight: 300;
+        top:0;
         left:0;
         margin-left:-10px;
-        padding: 5px;
-        /*display:inline-block;*/
-        z-index:0;
-        padding-left: 25px;
-        padding-right: 5px;
+        padding: 10px 16px 10px 36px;
+        vertical-align: middle;
+        z-index:1;
         background-color: white;
-        border: 1px solid #eeeeee;
-        position: relative;
+        /*border: 1px solid #eeeeee;*/
+        /*border: 1px solid red;*/
+        font-size: 12px;
+        line-height:1;
         content: attr(title);
+        transform: translateY(-50%);
+        box-shadow: 0 0 9px rgba(0,0,0,0.18);
         
         transition: all 150ms ease;
 
         opacity:0;
+        visibility: hidden;
+
+        /*opacity:0.5;*/
+        /*visibility: visible;*/
       }
 
     .container {
@@ -96,7 +113,10 @@
 <body>
   
   <div class="container">
-    <div id="map" class="map">
+    <div id="map" class="map" style="display:none;">
+      <div class="markers">
+        <div class="marker" data-marker='{ "x":0.5427083333333333,"y":0.8341307814992025, "props": { "title": "Swaziland" } }' ></div>
+      </div>
       <img src="worldmap.svg">
     </div>
   </div>
@@ -104,271 +124,16 @@
 
 </body>
 <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
-<!-- <script src="js/app.js"></script> -->
+<script src="markers.js"></script>
 <script>
-  function InteractiveMap(options) {
-    
-    var _this = this;
 
-    /**
-     * Default Options
-     * @type {Object}
-     */
-    this.options      = options || {};
-    this.debug        = options.debug || false;
-    this.selector     = options.selector || '.map';
-    this.markerClass  = options.markerClass || 'marker';
-    this.markers      = options.markers || [];
-    this.draggable    = options.draggable || false;
-
-
-
-    this.container = document.querySelectorAll(_this.selector).length ? document.querySelectorAll(_this.selector)[0] : false;
-
-    if ( !this.container ) {
-      console.error('Element with selector "' + this.selector + '" does not exist')
-      return false
-    }
-
-    /**
-     * Apply Required CSS
-     * @return {null}
-     */
-    this.applyRequiredStyles = function() {
-      // container
-      _this.container.style.position = 'relative'
-    }
-
-    this.requiredMarkerStyles = function() {
-      return {
-        position: 'absolute',
-        transform: 'translate3d(-50%, -50%, 0)',
-        cursor: 'pointer'
-      }
-    }
-
-    /**
-     * Get Container Dimensions
-     * @return {Object} width,height
-     */
-    this.getContainerDimensions = function(boundingRect) {
-
-      if ( boundingRect ) {
-        var rect = _this.container.querySelector('img').getBoundingClientRect()
-        return {
-          width: rect.width,
-          height: rect.height
-        }
-      } else {
-        return {
-          width: _this.container.clientWidth,
-          height: _this.container.clientHeight
-        }
-      }
-
-    }
-
-    /**
-     * Convert Percent to Pixels
-     * Accepts a value between [0,1] or [1,100] and converts it to a relative pixel value
-     * 
-     * @param  {Number} percent 
-     * @param  {Number} pixels  
-     * @return {Number} 
-     */
-    this.convertPercentToPx = function(percent, pixels) {
-      // percent = percent ? percent : 1;
-      // pixels  = pixels ? pixels : 1;
-
-      if ( percent <= 1 && percent > 0 ) {
-        return parseInt( pixels * percent )
-      } 
-      else {
-        return parseInt( (pixels/100) * percent )
-      }
-    }
-
-
-    this.convertPxToPercent = function(pixels, container) {
-      // pixels  = pixels ? pixels : 1;
-      container = container ? container : _this.container;
-
-      return (pixels / container)
-      
-    }
-
-    /**
-     * Draw Markers
-     * Draw the markers on the screen. Runs only once, then refer to updateMarkers()
-     */
-    this.drawMarkers = function() {
-      for ( var i=0; i<_this.markers.length; i++ ) {
-
-        var m = _this.markers[i];
-
-        var x = _this.convertPercentToPx( m.x, _this.getContainerDimensions().width )
-        var y = _this.convertPercentToPx( m.y, _this.getContainerDimensions().height )
-
-        var marker = document.createElement('div')
-            marker.className = _this.markerClass;
-
-        // Apply required marker styles
-        Object.keys( _this.requiredMarkerStyles() ).forEach(function(prop, i) {
-          marker.style[prop] = _this.requiredMarkerStyles()[prop]
-        })
-
-        // Apply custom properties
-        if ( m.props ) {
-          for ( prop in m.props ) {
-            marker.setAttribute(prop, m.props[prop])
-          }
-        }
-
-        // Set coords
-        marker.style.left = x+'px'
-        marker.style.top = y+'px'
-
-        // Append to DOM
-        _this.container.appendChild(marker)
-      }
-    }
-
-    /**
-     * Update Markers
-     */
-    this.updateMarkers = function() {
-      var markers = _this.container.querySelectorAll( '.'+_this.markerClass )
-
-      for ( var i=0; i<markers.length; i++ ) {
-        var x = _this.convertPercentToPx( _this.markers[i].x, _this.getContainerDimensions(true).width )
-        var y = _this.convertPercentToPx( _this.markers[i].y, _this.getContainerDimensions(true).height )
-
-        markers[i].style.left = x+'px'
-        markers[i].style.top = y+'px'
-      }
-    }
-
-
-
-
-    this.onResize = function(event) {
-      // Do something always
-      _this.updateMarkers()
-      // Provide hook
-      if ( _this.options.onResize ) _this.options.onResize(event)
-    }
-
-    this.onMarkerClick = function(event) {
-      if ( _this.options.onMarkerClick ) _this.options.onMarkerClick(_this, event)
-    }
-
-    // Attach event listeners
-    this.attachEventListener = function(item, type, func) {
-      if ( typeof item !== "undefined" ) {
-        if ( item.length > 0 ) {
-          item.forEach(function(el, i) {
-            el.addEventListener(type, func)
-          })
-        } else {
-          item.addEventListener(type, func, false)
-        }
-      }
-      
-    }
-
-    this.attachEventListeners = function() {
-      _this.attachEventListener( window, 'resize', _this.onResize )
-      _this.attachEventListener( document.querySelectorAll( '.'+_this.markerClass ), 'click', _this.onMarkerClick )
-    }
-
-
-
-    /**
-     * Debug
-     */
-    this.debugger = function() {
-      if ( this.debug ) {
-        var debugStyles = document.createElement('style')
-            debugStyles.type = 'text/css'
-
-        var css = ' \
-          .map { border: 1px solid cyan; } \
-          .marker { background-color: red; width: 10px; height: 10px; } \
-        ';
-
-        if ( debugStyles.styleSheet ) {
-          debugStyles.styleSheet.cssText = css;
-        } else {
-          debugStyles.appendChild(document.createTextNode(css))
-        }
-
-        document.body.appendChild(debugStyles)
-
-
-        // Draggable
-        var draggable = document.getElementsByClassName( 'marker' ),
-            draggableCount = draggable.length, 
-            i; 
-        
-        function startDrag(evt) {        
-          var diffX = evt.clientX - this.offsetLeft,
-              diffY = evt.clientY - this.offsetTop,
-              that = this; 
-
-          function moveAlong(evt) {
-            that.style.left = (evt.clientX - diffX) + 'px';
-            that.style.top = (evt.clientY - diffY) + 'px';
-          }
-          function stopDrag() {
-            document.removeEventListener('mousemove', moveAlong);
-            document.removeEventListener('mouseup', stopDrag);
-          }
-
-          document.addEventListener('mouseup', stopDrag);
-          document.addEventListener('mousemove', moveAlong);
-        }
-
-        for (i = 0; i < draggableCount; i += 1) {
-          draggable[i].addEventListener('mousedown', startDrag);
-        }
-      }
-    }
-    
-
-    this.onBeforeInit = function(cb) {
-      if ( _this.options.onBeforeInit ) _this.options.onBeforeInit(_this, event)
-    }
-
-    this.onAfterInit = function(cb) {
-      if ( _this.options.onAfterInit ) _this.options.onAfterInit(_this, event)
-    }
-
-
-    /**
-     * Initialize
-     */
-    this.init = function() {
-      _this.applyRequiredStyles()
-      _this.drawMarkers()
-      _this.attachEventListeners()
-      _this.debugger()
-    }
-
-    this.onBeforeInit()
-    this.init()
-    this.onAfterInit()
-  }
-
-
-
-
-  var map = new InteractiveMap({
-    // debug: true,
+  var map = new Markers({
+    debug: true,
     selector: '#map',
     markers: [
       {
-        x: 0.12708333333333333, 
-        y: 0.38581560283687943,
+        x: 0.134375,
+        y: 0.5550239234449761,
         props: {
           title: 'San Diego',
           id: 'marker-1',
@@ -376,22 +141,22 @@
         }
       },
       {
-        x: 0.24895833333333334,
-        y: 0.3617021276595745,
+        x: 0.25625,
+        y: 0.5119617224880383,
         props: {
           title: 'New York',
         }
       },
       {
-        x: 0.47291666666666665, 
-        y: 0.2950354609929078,
+        x: 0.459375, 
+        y: 0.44976076555023925,
         props: {
           title: 'London',
         }
       },
       { 
-        x: 0.875, 
-        y: 0.36879432624113473,
+        x: 0.8572916666666667, 
+        y: 0.5374800637958532,
         props: {
           title: 'Tokyo',
         }
@@ -407,8 +172,14 @@
       console.log('onResize', this)
     },
     onMarkerClick: function(instance, event) {
-      var newCoords = [instance.convertPxToPercent(event.target.offsetLeft, instance.getContainerDimensions().width), instance.convertPxToPercent(event.target.offsetTop, instance.getContainerDimensions().height)];
+      var newCoords = JSON.stringify({
+        x: instance.convertPxToPercent(event.target.offsetLeft, instance.getContainerDimensions().width), 
+        y: instance.convertPxToPercent(event.target.offsetTop, instance.getContainerDimensions().height)
+      });
       
+      console.log(newCoords)
+
+
       var targetModal = event.target.getAttribute('data-target-modal')
 
       if ( targetModal ) {
@@ -418,14 +189,6 @@
     }
   })
 
-
-
-  
-  ;!(function (document) {
-      'use strict';
-
-      
-  }(document));
 
 
 </script>
