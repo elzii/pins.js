@@ -5,7 +5,8 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
+  
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
   <!-- <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">  -->
   
   <style>
@@ -17,6 +18,7 @@
     }
     body {
       margin-top: 70px;
+      font-family: "Helvetica Neue", Helvetica;
     }
 
     #map {
@@ -26,6 +28,62 @@
       -o-user-select: none;
       user-select: none;
     }
+
+    .marker {
+      width:12px;
+      height:12px;
+      text-align: center;
+      background-color: #4481FE;
+      border: 3px solid white;
+      border-radius: 6px;
+      box-shadow: 0 0 3px rgba(0,0,0,0.15);
+      white-space: nowrap;
+    }
+      .marker:hover::before {
+        opacity:1;
+      }
+      .marker:hover::after {
+        opacity:1;
+      }
+
+      .marker::before {
+        position: absolute;
+        top:50%;
+        left:-50%;
+        width: 12px;
+        height: 12px;
+        border-radius: 6px;
+        content: '';
+        font-family: "fontawesome";
+        font-size: 11px;
+        z-index:10;
+        transform: translateY(-50%);
+        text-align: center;
+        background-color: #4481FE;
+
+        transition: all 150ms ease;
+        opacity:0;
+      }
+      
+      .marker::after {
+        position: absolute;
+        top:-100%;
+        left:0;
+        margin-left:-10px;
+        padding: 5px;
+        /*display:inline-block;*/
+        z-index:0;
+        padding-left: 25px;
+        padding-right: 5px;
+        background-color: white;
+        border: 1px solid #eeeeee;
+        position: relative;
+        content: attr(title);
+        
+        transition: all 150ms ease;
+
+        opacity:0;
+      }
 
     .container {
       max-width:960px;
@@ -38,7 +96,7 @@
 <body>
   
   <div class="container">
-    <div id="map">
+    <div id="map" class="map">
       <img src="worldmap.svg">
     </div>
   </div>
@@ -93,11 +151,21 @@
      * Get Container Dimensions
      * @return {Object} width,height
      */
-    this.getContainerDimensions = function() {
-      return {
-        width: _this.container.clientWidth,
-        height: _this.container.clientHeight
+    this.getContainerDimensions = function(boundingRect) {
+
+      if ( boundingRect ) {
+        var rect = _this.container.querySelector('img').getBoundingClientRect()
+        return {
+          width: rect.width,
+          height: rect.height
+        }
+      } else {
+        return {
+          width: _this.container.clientWidth,
+          height: _this.container.clientHeight
+        }
       }
+
     }
 
     /**
@@ -125,7 +193,7 @@
       // pixels  = pixels ? pixels : 1;
       container = container ? container : _this.container;
 
-      return (pixels / container )
+      return (pixels / container)
       
     }
 
@@ -136,8 +204,10 @@
     this.drawMarkers = function() {
       for ( var i=0; i<_this.markers.length; i++ ) {
 
-        var x = _this.convertPercentToPx( _this.markers[i].x, _this.getContainerDimensions().width )
-        var y = _this.convertPercentToPx( _this.markers[i].y, _this.getContainerDimensions().height )
+        var m = _this.markers[i];
+
+        var x = _this.convertPercentToPx( m.x, _this.getContainerDimensions().width )
+        var y = _this.convertPercentToPx( m.y, _this.getContainerDimensions().height )
 
         var marker = document.createElement('div')
             marker.className = _this.markerClass;
@@ -146,6 +216,13 @@
         Object.keys( _this.requiredMarkerStyles() ).forEach(function(prop, i) {
           marker.style[prop] = _this.requiredMarkerStyles()[prop]
         })
+
+        // Apply custom properties
+        if ( m.props ) {
+          for ( prop in m.props ) {
+            marker.setAttribute(prop, m.props[prop])
+          }
+        }
 
         // Set coords
         marker.style.left = x+'px'
@@ -163,8 +240,8 @@
       var markers = _this.container.querySelectorAll( '.'+_this.markerClass )
 
       for ( var i=0; i<markers.length; i++ ) {
-        var x = _this.convertPercentToPx( _this.markers[i].x, _this.getContainerDimensions().width )
-        var y = _this.convertPercentToPx( _this.markers[i].y, _this.getContainerDimensions().height )
+        var x = _this.convertPercentToPx( _this.markers[i].x, _this.getContainerDimensions(true).width )
+        var y = _this.convertPercentToPx( _this.markers[i].y, _this.getContainerDimensions(true).height )
 
         markers[i].style.left = x+'px'
         markers[i].style.top = y+'px'
@@ -209,23 +286,52 @@
     /**
      * Debug
      */
-    if ( this.debug ) {
-      var debugStyles = document.createElement('style')
-          debugStyles.type = 'text/css'
+    this.debugger = function() {
+      if ( this.debug ) {
+        var debugStyles = document.createElement('style')
+            debugStyles.type = 'text/css'
 
-      var css = ' \
-        .map { border: 1px solid blue; } \
-        .marker { width: 10px; height: 10px; background-color: red; } \
-      ';
+        var css = ' \
+          .map { border: 1px solid cyan; } \
+          .marker { background-color: red; width: 10px; height: 10px; } \
+        ';
 
-      if ( debugStyles.styleSheet ) {
-        debugStyles.styleSheet.cssText = css;
-      } else {
-        debugStyles.appendChild(document.createTextNode(css))
+        if ( debugStyles.styleSheet ) {
+          debugStyles.styleSheet.cssText = css;
+        } else {
+          debugStyles.appendChild(document.createTextNode(css))
+        }
+
+        document.body.appendChild(debugStyles)
+
+
+        // Draggable
+        var draggable = document.getElementsByClassName( 'marker' ),
+            draggableCount = draggable.length, 
+            i; 
+        
+        function startDrag(evt) {        
+          var diffX = evt.clientX - this.offsetLeft,
+              diffY = evt.clientY - this.offsetTop,
+              that = this; 
+
+          function moveAlong(evt) {
+            that.style.left = (evt.clientX - diffX) + 'px';
+            that.style.top = (evt.clientY - diffY) + 'px';
+          }
+          function stopDrag() {
+            document.removeEventListener('mousemove', moveAlong);
+            document.removeEventListener('mouseup', stopDrag);
+          }
+
+          document.addEventListener('mouseup', stopDrag);
+          document.addEventListener('mousemove', moveAlong);
+        }
+
+        for (i = 0; i < draggableCount; i += 1) {
+          draggable[i].addEventListener('mousedown', startDrag);
+        }
       }
-
-      document.body.appendChild(debugStyles)
-
     }
     
 
@@ -245,6 +351,7 @@
       _this.applyRequiredStyles()
       _this.drawMarkers()
       _this.attachEventListeners()
+      _this.debugger()
     }
 
     this.onBeforeInit()
@@ -256,13 +363,39 @@
 
 
   var map = new InteractiveMap({
-    debug: true,
+    // debug: true,
     selector: '#map',
     markers: [
-      { x: 0, y: 0 },
-      { x: 0.45, y: 0.25 },
-      { x: 0.3, y: 0.25 },
-      { x: 0.5, y: 0.5 },
+      {
+        x: 0.12708333333333333, 
+        y: 0.38581560283687943,
+        props: {
+          title: 'San Diego',
+          id: 'marker-1',
+          'data-target-modal': '#modalExample'
+        }
+      },
+      {
+        x: 0.24895833333333334,
+        y: 0.3617021276595745,
+        props: {
+          title: 'New York',
+        }
+      },
+      {
+        x: 0.47291666666666665, 
+        y: 0.2950354609929078,
+        props: {
+          title: 'London',
+        }
+      },
+      { 
+        x: 0.875, 
+        y: 0.36879432624113473,
+        props: {
+          title: 'Tokyo',
+        }
+      },
     ],
     onBeforeInit: function(event) {
       console.log('onBeforeInit')
@@ -274,7 +407,14 @@
       console.log('onResize', this)
     },
     onMarkerClick: function(instance, event) {
-      console.log( instance.convertPxToPercent(123,500) )
+      var newCoords = [instance.convertPxToPercent(event.target.offsetLeft, instance.getContainerDimensions().width), instance.convertPxToPercent(event.target.offsetTop, instance.getContainerDimensions().height)];
+      
+      var targetModal = event.target.getAttribute('data-target-modal')
+
+      if ( targetModal ) {
+        console.log('Trigger '+targetModal+' here.')
+      }
+
     }
   })
 
@@ -284,31 +424,7 @@
   ;!(function (document) {
       'use strict';
 
-      var draggable = document.getElementsByClassName( 'marker' ),
-          draggableCount = draggable.length, 
-          i; 
       
-      function startDrag(evt) {        
-        var diffX = evt.clientX - this.offsetLeft,
-        diffY = evt.clientY - this.offsetTop,
-        that = this; 
-
-        function moveAlong(evt) {
-          that.style.left = (evt.clientX - diffX) + 'px';
-          that.style.top = (evt.clientY - diffY) + 'px';
-        }
-        function stopDrag() {
-          document.removeEventListener('mousemove', moveAlong);
-          document.removeEventListener('mouseup', stopDrag);
-        }
-
-        document.addEventListener('mouseup', stopDrag);
-        document.addEventListener('mousemove', moveAlong);
-      }
-
-      for (i = 0; i < draggableCount; i += 1) {
-        draggable[i].addEventListener('mousedown', startDrag);
-      }
   }(document));
 
 
