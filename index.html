@@ -1,16 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>worldmap-overlay-coords</title>
+  <title>Pins.js</title>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-
-
-  <!-- <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">  -->
-  
   <style>
     html {
       box-sizing: border-box;
@@ -103,7 +99,7 @@
       }
 
     .container {
-      max-width:960px;
+      max-width:1140px;
       margin:0 auto;
     }
   </style>
@@ -126,10 +122,6 @@
 <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
 <script src="pins.js"></script>
 <script>
-
-  // var x = new Markers({
-
-  // }) 
 
   var map = new Pins({
     debug: true,
@@ -167,13 +159,13 @@
       },
     ],
     onBeforeInit: function(event) {
-      console.log('onBeforeInit')
+      
     },
     onAfterInit: function(event) {
-      console.log('onAfterInit')
+      
     },
     onResize: function(event) {
-      console.log('onResize', this)
+      
     },
     onMarkerClick: function(instance, event) {
       var newCoords = JSON.stringify({
@@ -182,7 +174,6 @@
       });
       
       console.log(newCoords)
-
 
       var targetModal = event.target.getAttribute('data-target-modal')
 
