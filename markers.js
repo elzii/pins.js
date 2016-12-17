@@ -60,6 +60,7 @@
       return {
         position: 'relative',
         'user-select': 'none',
+        transition: 'opacity 150ms linear'
       }
     }
 
@@ -226,51 +227,60 @@
     /**
      * Debug
      */
-    this.debugger = function() {
+    this.debugMarkers = function() {
       if ( this.debug ) {
-        var debugStyles = document.createElement('style')
-            debugStyles.type = 'text/css'
-
-        // var css = ' \
-        //   .map { border: 1px solid cyan; } \
-        //   .marker { background-color: red; width: 10px; height: 10px; } \
-        // ';
-
-        // if ( debugStyles.styleSheet ) {
-        //   debugStyles.styleSheet.cssText = css;
-        // } else {
-        //   debugStyles.appendChild(document.createTextNode(css))
-        // }
-
-        // document.body.appendChild(debugStyles)
-
+        
+        // self.appendDebugStylesheet()
 
         // Draggable
-        var draggable = document.getElementsByClassName( 'marker' ),
-            draggableCount = draggable.length, 
-            i; 
-        
-        function startDrag(evt) {        
-          var diffX = evt.clientX - this.offsetLeft,
-              diffY = evt.clientY - this.offsetTop,
-              that = this; 
+        self.makeDraggable( self.markerClass )
+      }
+    }
 
-          function moveAlong(evt) {
-            that.style.left = (evt.clientX - diffX) + 'px';
-            that.style.top = (evt.clientY - diffY) + 'px';
-          }
-          function stopDrag() {
-            document.removeEventListener('mousemove', moveAlong);
-            document.removeEventListener('mouseup', stopDrag);
-          }
 
-          document.addEventListener('mouseup', stopDrag);
-          document.addEventListener('mousemove', moveAlong);
+    this.appendDebugStylesheet = function() {
+      var debugStyles = document.createElement('style')
+          debugStyles.type = 'text/css'
+
+      var css = ' \
+        .map { border: 1px solid cyan; } \
+        .marker { background-color: red; width: 10px; height: 10px; } \
+      ';
+
+      if ( debugStyles.styleSheet ) {
+        debugStyles.styleSheet.cssText = css;
+      } else {
+        debugStyles.appendChild(document.createTextNode(css))
+      }
+
+      document.body.appendChild(debugStyles)
+    }
+
+    this.makeDraggable = function(selector) {
+      var draggable = document.getElementsByClassName( selector ),
+          draggableCount = draggable.length, 
+          i; 
+      
+      function startDrag(evt) {        
+        var diffX = evt.clientX - this.offsetLeft,
+            diffY = evt.clientY - this.offsetTop,
+            that = this; 
+
+        function moveAlong(evt) {
+          that.style.left = (evt.clientX - diffX) + 'px';
+          that.style.top = (evt.clientY - diffY) + 'px';
+        }
+        function stopDrag() {
+          document.removeEventListener('mousemove', moveAlong);
+          document.removeEventListener('mouseup', stopDrag);
         }
 
-        for (i = 0; i < draggableCount; i += 1) {
-          draggable[i].addEventListener('mousedown', startDrag);
-        }
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('mousemove', moveAlong);
+      }
+
+      for (i = 0; i < draggableCount; i += 1) {
+        draggable[i].addEventListener('mousedown', startDrag);
       }
     }
     
@@ -284,6 +294,9 @@
     }
 
     this.onAfterInit = function(cb) {
+      // Do always
+      self.container.style.opacity = 1;
+      // Provide hook
       if ( self.options.onAfterInit ) self.options.onAfterInit(self, event)
     }
 
@@ -296,7 +309,7 @@
       self.detectMarkers()
       self.drawMarkers()
       self.attachEventListeners()
-      self.debugger()
+      self.debugMarkers()
     }
 
     
