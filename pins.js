@@ -1,27 +1,22 @@
 ;(function (exports) {
   'use strict';
 
-  function Markers(options) {  
+  function Pins(options) {  
     var self = this;
 
     /**
      * Default Options
      * @type {Object}
      */
-    this.options      = options || {};
-    this.debug        = options.debug || false;
-    this.selector     = options.selector || '.map';
-    this.markerClass  = options.markerClass || 'marker';
-    this.markers      = options.markers || [];
-    this.draggable    = options.draggable || false;
+    this.options        = options || {};
+    this.debug          = self.options.debug || false;
+    this.selector       = self.options.selector || null;
+    this.pinClass       = self.options.pinClass || 'pin';
+    this.pins           = self.options.pins || [];
+    this.positionMethod = self.options.positionMethod || 'percent';
+    this.draggable      = self.options.draggable || false;
 
     this.container = document.querySelectorAll(self.selector).length ? document.querySelectorAll(self.selector)[0] : false;
-
-    if ( !this.container ) {
-      console.error('Element with selector "' + this.selector + '" does not exist')
-      return false
-    }
-
     
     this.applyInlineStyles = function(node, styles) {
       var elems  = [],
@@ -64,7 +59,7 @@
       }
     }
 
-    this.requiredMarkerStyles = function() {
+    this.requiredPinStyles = function() {
       return {
         position: 'absolute',
         transform: 'translate3d(-50%, -50%, 0)',
@@ -117,75 +112,99 @@
     this.convertPxToPercent = function(pixels, container) {
       // pixels  = pixels ? pixels : 1;
       container = container ? container : self.container;
-
       return (pixels / container)
       
     }
 
-    this.detectMarkers = function() {
-      var markers = self._find( self.container, document.getElementsByClassName( self.markerClass ))
+    this.detectPins = function() {
+      var pins = self._find( self.container, document.getElementsByClassName( self.pinClass ))
       
-      if ( !markers ) return false;
+      if ( !pins ) return false;
 
-      for ( var i=0; i<markers.length; i++) {
-        var data = markers[i].getAttribute('data-marker')
+      for ( var i=0; i<pins.length; i++) {
+        var data = pins[i].getAttribute('data-pin')
         if ( data ) {
-          var marker = JSON.parse(data)
-          self.markers.push(marker)
-          markers[i].parentNode.removeChild(markers[i])
+          var pin = JSON.parse(data)
+          self.pins.push(pin)
+          pins[i].parentNode.removeChild(pins[i])
         } else {
-          throw new Error('detectMarkers(): no data-marker attribute found')
+          throw new Error('detectPins(): no data-pin attribute found')
         }
       }
     }
 
 
     /**
-     * Draw Markers
-     * Draw the markers on the screen. Runs only once, then refer to updateMarkers()
+     * Draw Pins
+     * Draw the pins on the screen. Runs only once, then refer to updatePins()
      */
-    this.drawMarkers = function() {
-      for ( var i=0; i<self.markers.length; i++ ) {
+    this.drawPins = function(positionMethod) {
 
-        var m = self.markers[i];
+      var positionMethod = positionMethod || self.positionMethod
 
-        var x = self.convertPercentToPx( m.x, self.getContainerDimensions().width )
-        var y = self.convertPercentToPx( m.y, self.getContainerDimensions().height )
+      for ( var i=0; i<self.pins.length; i++ ) {
 
-        var marker = document.createElement('div')
-            marker.className = self.markerClass;
 
-        // Apply required marker styles
-        self.applyInlineStyles( marker, self.requiredMarkerStyles() )
+        var m = self.pins[i];
+
+        // position pins
+        var pin = document.createElement('div')
+            pin.className = self.pinClass;
+
+        // Apply required pin styles
+        self.applyInlineStyles( pin, self.requiredPinStyles() )
 
         // Apply custom properties
         if ( m.props ) {  
           for ( var prop in m.props ) {
-            marker.setAttribute(prop, m.props[prop])
+            pin.setAttribute(prop, m.props[prop])
           }
         }
 
-        // Set coords
-        marker.style.left = x+'px'
-        marker.style.top = y+'px'
+        if ( positionMethod === 'px') {
+          // get pin coords
+          var x = self.convertPercentToPx( m.x, self.getContainerDimensions().width )
+          var y = self.convertPercentToPx( m.y, self.getContainerDimensions().height )
+
+          // Set coords
+          pin.style.left = x+'px'
+          pin.style.top = y+'px'
+        }
+        if ( positionMethod === 'percent' ) {
+          // Set coords
+          pin.style.left = parseFloat(m.x*100)+'%'
+          pin.style.top = parseFloat(m.y*100)+'%' 
+        }
 
         // Append to DOM
-        self.container.appendChild(marker)
+        self.container.appendChild(pin)
       }
     }
 
     /**
-     * Update Markers
+     * Update Pins
      */
-    this.updateMarkers = function() {
-      var markers = self.container.querySelectorAll( '.'+self.markerClass )
+    this.updatePins = function() {
+      var pins = self.container.querySelectorAll( '.'+self.pinClass )
+      var positionMethod = positionMethod || self.positionMethod
 
-      for ( var i=0; i<markers.length; i++ ) {
-        var x = self.convertPercentToPx( self.markers[i].x, self.getContainerDimensions(true).width )
-        var y = self.convertPercentToPx( self.markers[i].y, self.getContainerDimensions(true).height )
+      for ( var i=0; i<pins.length; i++ ) {
+        var pin = pins[i]
 
-        markers[i].style.left = x+'px'
-        markers[i].style.top = y+'px'
+        if ( positionMethod === 'px') {
+          // get pin coords
+          var x = self.convertPercentToPx( m.x, self.getContainerDimensions().width )
+          var y = self.convertPercentToPx( m.y, self.getContainerDimensions().height )
+
+          // Set coords
+          pin.style.left = x+'px'
+          pin.style.top = y+'px'
+        }
+        if ( positionMethod === 'percent' ) {
+          // Set coords
+          pin.style.left = parseFloat(pins[i].x*100)+'%'
+          pin.style.top = parseFloat(pins[i].y*100)+'%' 
+        }
       }
     }
 
@@ -194,13 +213,13 @@
 
     this.onResize = function(event) {
       // Do something always
-      self.updateMarkers()
+      self.updatePins()
       // Provide hook
       if ( self.options.onResize ) self.options.onResize(event)
     }
 
-    this.onMarkerClick = function(event) {
-      if ( self.options.onMarkerClick ) self.options.onMarkerClick(self, event)
+    this.onPinClick = function(event) {
+      if ( self.options.onPinClick ) self.options.onPinClick(self, event)
     }
 
     // Attach event listeners
@@ -219,7 +238,7 @@
 
     this.attachEventListeners = function() {
       self.attachEventListener( window, 'resize', self.onResize )
-      self.attachEventListener( document.querySelectorAll( '.'+self.markerClass ), 'click', self.onMarkerClick )
+      self.attachEventListener( document.querySelectorAll( '.'+self.pinClass ), 'click', self.onPinClick )
     }
 
 
@@ -227,13 +246,13 @@
     /**
      * Debug
      */
-    this.debugMarkers = function() {
+    this.debugPins = function() {
       if ( this.debug ) {
         
         // self.appendDebugStylesheet()
 
         // Draggable
-        self.makeDraggable( self.markerClass )
+        self.makeDraggable( self.pinClass )
       }
     }
 
@@ -244,7 +263,7 @@
 
       var css = ' \
         .map { border: 1px solid cyan; } \
-        .marker { background-color: red; width: 10px; height: 10px; } \
+        .pin { background-color: red; width: 10px; height: 10px; } \
       ';
 
       if ( debugStyles.styleSheet ) {
@@ -284,44 +303,78 @@
       }
     }
     
-
+    /**
+     * onBeforeInit
+     * Hook provided before initialization 
+     * 
+     * @param  {Function} cb [description]
+     */
     this.onBeforeInit = function(cb) {
       // Do always
       self.container.style.display = 'block'
 
       // Provide hook
       if ( self.options.onBeforeInit ) self.options.onBeforeInit(self, event)
+
+      if ( cb ) cb()
     }
 
+    /**
+     * onAfterInit
+     * Hook provided after initialization
+     * 
+     * @param  {Function} cb 
+     */
     this.onAfterInit = function(cb) {
       // Do always
       self.container.style.opacity = 1;
+
       // Provide hook
       if ( self.options.onAfterInit ) self.options.onAfterInit(self, event)
+
+      if ( cb ) cb()
     }
 
 
     /**
-     * Initialize
+     * Init
+     * @param  {Function} cb [callback]
      */
-    this.init = function() {
+    this.init = function(cb) {
+
+      if ( !this.selector ) {
+        console.error('Pins(): Must provide a selector')
+        return false;
+      }
+      if ( !self.container ) {
+        console.error('Element with selector "' + this.selector + '" does not exist')
+        return false
+      }
+
       self.applyRequiredStyles()
-      self.detectMarkers()
-      self.drawMarkers()
+      self.detectPins()
+      self.drawPins('percent')
       self.attachEventListeners()
-      self.debugMarkers()
+      self.debugPins()
+
+      // Provide hook
+      if ( self.options.onInit ) self.options.onInit(self, event)
+
+      if ( cb ) cb()
     }
 
     
-
-    this.onBeforeInit()
-    this.init()
-    this.onAfterInit()
+    self.onBeforeInit(function() {
+      self.init(function() {
+        self.onAfterInit()
+      })
+    })
+    
 
   }
 
 
-  var proto = Markers.prototype;
+  var proto = Pins.prototype;
 
 
   proto.isElement = function(node) {
@@ -364,15 +417,15 @@
   // Expose the class either via AMD, CommonJS or the global object
   if (typeof define === 'function' && define.amd) {
     define(function () {
-      return Markers;
+      return Pins;
     });
   }
   else if (typeof module === 'object' && module.exports){
-    module.exports = Markers;
+    module.exports = Pins;
   }
   else {
-    exports.Markers = Markers;
+    exports.Pins = Pins;
   }
 
-  return Markers;
+  
 }(this || {}));
