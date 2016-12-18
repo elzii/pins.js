@@ -108,6 +108,7 @@
 </head>
 <body>
   
+  <div id="test"></div>
   <div class="container">
     <div id="map" class="map" style="opacity:0;">
       <div class="pins">
@@ -123,9 +124,12 @@
 <script src="pins.js"></script>
 <script>
 
+
+
   var map = new Pins({
     debug: true,
     selector: '#map',
+    positionMethod: 'px',
     pins: [
       {
         x: 0.134375,

@@ -13,29 +13,15 @@
     this.selector       = self.options.selector || null;
     this.pinClass       = self.options.pinClass || 'pin';
     this.pins           = self.options.pins || [];
-    this.positionMethod = self.options.positionMethod || 'percent';
+    this.positionMethod = self.options.positionMethod || 'px';
     this.draggable      = self.options.draggable || false;
 
     this.container = document.querySelectorAll(self.selector).length ? document.querySelectorAll(self.selector)[0] : false;
     
     this.applyInlineStyles = function(node, styles) {
-      var elems  = [],
-          styles = styles || {}
+      var styles = styles || {}
 
-      if ( !!Object.prototype.toString.call(node).match(/NodeList/) ) {
-        // console.log('NodeList', node)
-        elems = node
-      } else if ( !!Object.prototype.toString.call(node).match(/HTMLCollection/) ) {
-        // console.log('HTMLCollection', node)
-        elems = node
-      } else if ( !!Object.prototype.toString.call(node).match(/HTMLDivElement/) ) {
-        // console.log('HTMLDivElement', node)
-        elems.push(node)
-      } else if ( Array.isArray(node) )  {
-        elems = node
-      } else {
-        throw new Error('applyInlineStyles(): First param must be an element')
-      }
+      var elems = self._nodeArr(node)
       
       for ( var i=0; i<elems.length; i++ ) {
         for ( var p in styles ) {
@@ -138,12 +124,9 @@
      * Draw Pins
      * Draw the pins on the screen. Runs only once, then refer to updatePins()
      */
-    this.drawPins = function(positionMethod) {
-
-      var positionMethod = positionMethod || self.positionMethod
+    this.drawPins = function() {
 
       for ( var i=0; i<self.pins.length; i++ ) {
-
 
         var m = self.pins[i];
 
@@ -161,7 +144,7 @@
           }
         }
 
-        if ( positionMethod === 'px') {
+        if ( self.positionMethod === 'px') {
           // get pin coords
           var x = self.convertPercentToPx( m.x, self.getContainerDimensions().width )
           var y = self.convertPercentToPx( m.y, self.getContainerDimensions().height )
@@ -170,7 +153,7 @@
           pin.style.left = x+'px'
           pin.style.top = y+'px'
         }
-        if ( positionMethod === 'percent' ) {
+        if ( self.positionMethod === 'percent' ) {
           // Set coords
           pin.style.left = parseFloat(m.x*100)+'%'
           pin.style.top = parseFloat(m.y*100)+'%' 
@@ -186,12 +169,13 @@
      */
     this.updatePins = function() {
       var pins = self.container.querySelectorAll( '.'+self.pinClass )
-      var positionMethod = positionMethod || self.positionMethod
 
       for ( var i=0; i<pins.length; i++ ) {
+        var m = self.pins[i]
+
         var pin = pins[i]
 
-        if ( positionMethod === 'px') {
+        if ( self.positionMethod === 'px') {
           // get pin coords
           var x = self.convertPercentToPx( m.x, self.getContainerDimensions().width )
           var y = self.convertPercentToPx( m.y, self.getContainerDimensions().height )
@@ -200,10 +184,10 @@
           pin.style.left = x+'px'
           pin.style.top = y+'px'
         }
-        if ( positionMethod === 'percent' ) {
+        if ( self.positionMethod === 'percent' ) {
           // Set coords
-          pin.style.left = parseFloat(pins[i].x*100)+'%'
-          pin.style.top = parseFloat(pins[i].y*100)+'%' 
+          pin.style.left = parseFloat(m[i].x*100)+'%'
+          pin.style.top = parseFloat(m[i].y*100)+'%' 
         }
       }
     }
@@ -303,6 +287,18 @@
       }
     }
     
+    this.validOptions = function() {
+      if ( !self.container ) {
+        console.warn('Element with selector "' + this.selector + '" does not exist')
+        return false
+      }
+      if ( !this.selector ) {
+        console.warn('Pins(): Must provide a selector')
+        return false;
+      }
+      return true;
+    }
+
     /**
      * onBeforeInit
      * Hook provided before initialization 
@@ -310,9 +306,8 @@
      * @param  {Function} cb [description]
      */
     this.onBeforeInit = function(cb) {
-      // Do always
-      self.container.style.display = 'block'
-
+      // Do awlays
+      
       // Provide hook
       if ( self.options.onBeforeInit ) self.options.onBeforeInit(self, event)
 
@@ -342,18 +337,9 @@
      */
     this.init = function(cb) {
 
-      if ( !this.selector ) {
-        console.error('Pins(): Must provide a selector')
-        return false;
-      }
-      if ( !self.container ) {
-        console.error('Element with selector "' + this.selector + '" does not exist')
-        return false
-      }
-
       self.applyRequiredStyles()
       self.detectPins()
-      self.drawPins('percent')
+      self.drawPins()
       self.attachEventListeners()
       self.debugPins()
 
@@ -363,15 +349,18 @@
       if ( cb ) cb()
     }
 
-    
-    self.onBeforeInit(function() {
-      self.init(function() {
-        self.onAfterInit()
+    if ( self.validOptions() ) {
+      self.onBeforeInit(function() {
+        self.init(function() {
+          self.onAfterInit()
+        })
       })
-    })
+    }
     
 
   }
+
+
 
 
   var proto = Pins.prototype;
@@ -413,6 +402,22 @@
     }
     return ary;
   };
+
+
+  proto._nodeArr = function(node) {
+    if ( !!Object.prototype.toString.call(node).match(/NodeList/) ) {
+      return node
+    } else if ( !!Object.prototype.toString.call(node).match(/HTMLCollection/) ) {
+      return node
+    } else if ( !!Object.prototype.toString.call(node).match(/HTMLDivElement/) ) {
+      return [node]
+    } else if ( Array.isArray(node) )  {
+      return node
+    } else {
+      throw new Error('applyInlineStyles(): First param must be a NodeList, HTMLCollection, or HTMLDivElement')
+    }
+  }
+
 
   // Expose the class either via AMD, CommonJS or the global object
   if (typeof define === 'function' && define.amd) {
