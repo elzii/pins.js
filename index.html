@@ -171,7 +171,7 @@
     onResize: function(event) {
       
     },
-    onMarkerClick: function(instance, event) {
+    onPinClick: function(instance, event) {
       var newCoords = JSON.stringify({
         x: instance.convertPxToPercent(event.target.offsetLeft, instance.getContainerDimensions().width), 
         y: instance.convertPxToPercent(event.target.offsetTop, instance.getContainerDimensions().height)
