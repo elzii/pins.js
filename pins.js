@@ -18,6 +18,13 @@
 
     this.container = document.querySelectorAll(self.selector).length ? document.querySelectorAll(self.selector)[0] : false;
     
+    /**
+     * applyInlineStyles
+     *
+     * @param node
+     * @param styles
+     * @returns {undefined}
+     */
     this.applyInlineStyles = function(node, styles) {
       var styles = styles || {}
 
@@ -31,7 +38,12 @@
       }
  
     }
-
+  
+    /**
+     * applyRequiredStyles
+     *
+     * @returns {undefined}
+     */
     this.applyRequiredStyles = function() {
       this.applyInlineStyles( self.container, self.requiredContainerStyles() )
     }
