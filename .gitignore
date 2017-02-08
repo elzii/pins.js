@@ -1,5 +1,4 @@
 .DS_Store
 tags
-node_modules/
-vendor/
-
+none_modules/
+.tern-port

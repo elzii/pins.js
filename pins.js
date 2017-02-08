@@ -371,12 +371,22 @@
     
 
   }
-
-
+ 
 
 
   var proto = Pins.prototype;
+  
+  proto.getImageSize = function( node ) {
 
+    var wait = setInterval(function() {
+      var w = node.naturalWidth,
+          h = node.naturalHeight;
+      if (w && h) {
+        clearInterval(wait);
+        callback.apply(this, [w, h]);
+      }
+    }, 30);
+  }
 
   proto.isElement = function(node) {
     try {
