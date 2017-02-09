@@ -222,9 +222,9 @@
     this.attachEventListener = function(item, type, func) {
       if ( typeof item !== "undefined" ) {
         if ( item.length > 0 ) {
-          item.forEach(function(el, i) {
-            el.addEventListener(type, func)
-          })
+          for ( var i=0; i<item.length; i++ ) {
+            item[i].addEventListener(type, func)
+          }
         } else {
           item.addEventListener(type, func, false)
         }
